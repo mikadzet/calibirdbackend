@@ -27,6 +27,8 @@ const leaderboardCollection = mongoose.model('leaderboards', leaderboardSchema)
 
 // API to fetch leaderboard
 app.get('/leaderboard', async (req, res) => {
+  console.log(3)
+
   try {
     const leaderboard = await leaderboardCollection
       .find()
