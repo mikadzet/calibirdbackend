@@ -2,34 +2,28 @@ const express = require('express')
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
 const cors = require('cors')
-require('dotenv').config() // Import dotenv to load environment variables
+require('dotenv').config()
 
 const app = express()
 
-// Load environment variables
-const PORT = process.env.PORT || 5000 // Default to 5000 if PORT is not set
-const MONGO_URI = process.env.MONGO_URI // MongoDB URI from .env file
+const PORT = process.env.PORT || 5000
+const MONGO_URI = process.env.MONGO_URI
 
-// Middleware
 app.use(cors())
 app.use(bodyParser.json())
 
-// MongoDB Connection
 mongoose
   .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.log('MongoDB connection error:', err))
 
-// Reference to your specific collection
-const db = mongoose.connection
-
-// Create Leaderboard Schema
 const leaderboardSchema = new mongoose.Schema({
   nickname: { type: String, required: true, unique: true },
+  phone: { type: Number, required: true, unique: true },
   highscore: { type: Number, required: true },
 })
 
-const leaderboardCollection = mongoose.model('leaderboard', leaderboardSchema)
+const leaderboardCollection = mongoose.model('leaderboards', leaderboardSchema)
 
 // API to fetch leaderboard
 app.get('/leaderboard', async (req, res) => {
@@ -44,44 +38,76 @@ app.get('/leaderboard', async (req, res) => {
   }
 })
 
-// API to update or add user highscore
-app.post('/leaderboard', async (req, res) => {
+app.post('/update-score', async (req, res) => {
   const { nickname, highscore } = req.body
+  console.log(highscore)
 
   try {
-    // Check if the user exists
     const existingUser = await leaderboardCollection.findOne({ nickname })
 
-    if (existingUser) {
-      if (highscore > existingUser.highscore) {
-        // Update highscore if the new score is higher
-        existingUser.highscore = highscore
-        await existingUser.save()
-        res.json({
-          message: 'Highscore updated',
-          user: { nickname, highscore },
-        })
-      } else {
-        res.json({
-          message: 'Score not high enough to update',
-          user: existingUser,
-        })
-      }
+    if (highscore > existingUser.highscore) {
+      existingUser.highscore = highscore
+      await existingUser.save()
+      res.json({
+        message: 'Highscore updated',
+        user: { nickname, highscore },
+      })
     } else {
-      // Add a new user if they don't exist
-      const newUser = new leaderboardCollection({ nickname, highscore })
-      await newUser.save()
-      res.json({ message: 'New user added to leaderboard', user: newUser })
+      res.json({
+        message: 'Score not high enough to update',
+        user: existingUser,
+      })
     }
   } catch (err) {
-    // Handle duplicate username error
-    if (err.code === 11000) {
-      res.status(400).json({ error: 'Username already exists' })
-    } else {
-      res
-        .status(500)
-        .json({ error: 'Failed to update leaderboard', details: err.message })
+    res
+      .status(500)
+      .json({ error: 'Failed to update leaderboard', details: err.message })
+  }
+})
+
+app.post('/addUser', async (req, res) => {
+  const { nickname, phone } = req.body
+
+  try {
+    // Check if a user with the same phone number exists
+    const existingUserByPhone = await leaderboardCollection.findOne({ phone })
+
+    if (existingUserByPhone) {
+      // If the phone exists, check if the nickname matches
+      if (existingUserByPhone.nickname === nickname) {
+        return res
+          .status(200)
+          .json({ message: 'User already exists.', user: existingUserByPhone })
+      } else {
+        return res.status(400).json({
+          error: 'Phone number already used with a different nickname.',
+        })
+      }
     }
+
+    // If no phone match, check if the nickname is taken
+    const existingUserByNickname = await leaderboardCollection.findOne({
+      nickname,
+    })
+    if (existingUserByNickname) {
+      return res.status(400).json({ error: 'Nickname is already taken.' })
+    }
+
+    // If no conflicts, create the new user
+    const newUser = new leaderboardCollection({
+      nickname,
+      phone,
+      highscore: 0,
+    })
+
+    await newUser.save()
+
+    return res
+      .status(201)
+      .json({ message: 'User added successfully.', user: newUser })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: 'Internal server error.' })
   }
 })
 
