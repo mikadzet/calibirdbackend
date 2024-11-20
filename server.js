@@ -9,12 +9,12 @@ const app = express()
 const PORT = process.env.PORT || 5000
 const MONGO_URI = process.env.MONGO_URI
 
-const cors = require('cors')
 app.use(
   cors({
-    origin: 'https://calibird.netlify.app', // Your Netlify domain
+    origin: 'https://calibird.netlify.app', // Replace with your Netlify frontend domain
   })
 )
+app.use(bodyParser.json()) // Add this to parse JSON payloads
 
 mongoose
   .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
