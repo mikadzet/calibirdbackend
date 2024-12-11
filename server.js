@@ -10,15 +10,12 @@ const PORT = process.env.PORT || 5000
 const MONGO_URI = process.env.MONGO_URI
 const blockedNumbers = ['574110338'] //
 
-<<<<<<< HEAD
 app.use(
   cors({
     origin: 'https://calibird.netlify.app',
   })
 )
-=======
 app.use(cors())
->>>>>>> 3ef1936957ee4b1912934f956ae81d519910e547
 app.use(bodyParser.json())
 
 mongoose
@@ -36,16 +33,18 @@ const leaderboardCollection = mongoose.model('leaderboards', leaderboardSchema)
 
 // API to fetch leaderboard
 app.get('/leaderboard', async (req, res) => {
-  console.log(3)
-  const { phone } = req.query
-  // Check if the phone number is blocked
+  const { phone } = req.query // Get the phone from query parameters if provided
+
+  // If a phone number is provided, check if it's blocked
   if (phone && blockedNumbers.includes(phone.toString())) {
     return res.status(403).json({ error: 'This phone number is blocked.' })
   }
+
   try {
     const leaderboard = await leaderboardCollection
       .find()
       .sort({ highscore: -1 })
+      .limit(10)
     res.json(leaderboard)
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch leaderboard' })
