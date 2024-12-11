@@ -8,13 +8,14 @@ const app = express()
 
 const PORT = process.env.PORT || 5000
 const MONGO_URI = process.env.MONGO_URI
+const blockedNumbers = ['574110338'] //
 
 app.use(
   cors({
-    origin: 'https://calibird.netlify.app', // Replace with your Netlify frontend domain
+    origin: 'https://calibird.netlify.app',
   })
 )
-app.use(bodyParser.json()) // Add this to parse JSON payloads
+app.use(bodyParser.json())
 
 mongoose
   .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -32,7 +33,11 @@ const leaderboardCollection = mongoose.model('leaderboards', leaderboardSchema)
 // API to fetch leaderboard
 app.get('/leaderboard', async (req, res) => {
   console.log(3)
-
+  const { phone } = req.query
+  // Check if the phone number is blocked
+  if (phone && blockedNumbers.includes(phone.toString())) {
+    return res.status(403).json({ error: 'This phone number is blocked.' })
+  }
   try {
     const leaderboard = await leaderboardCollection
       .find()
@@ -50,6 +55,11 @@ app.post('/update-score', async (req, res) => {
 
   try {
     const existingUser = await leaderboardCollection.findOne({ nickname })
+
+    // Check if the user's phone number is blocked
+    if (blockedNumbers.includes(existingUser.phone.toString())) {
+      return res.status(403).json({ error: 'This phone number is blocked.' })
+    }
 
     if (highscore > existingUser.highscore) {
       existingUser.highscore = highscore
@@ -74,6 +84,9 @@ app.post('/update-score', async (req, res) => {
 app.post('/addUser', async (req, res) => {
   const { nickname, phone } = req.body
 
+  if (blockedNumbers.includes(phone.toString())) {
+    return res.status(403).json({ error: 'This phone number is blocked.' })
+  }
   try {
     // Check if a user with the same phone number exists
     const existingUserByPhone = await leaderboardCollection.findOne({ phone })
