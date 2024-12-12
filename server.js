@@ -8,13 +8,8 @@ const app = express()
 
 const PORT = process.env.PORT || 5000
 const MONGO_URI = process.env.MONGO_URI
-const blockedNumbers = ['574110338'] //
+const blockedNumbers = ['574110338']
 
-app.use(
-  cors({
-    origin: 'https://calibird.netlify.app',
-  })
-)
 app.use(cors())
 app.use(bodyParser.json())
 
@@ -44,7 +39,6 @@ app.get('/leaderboard', async (req, res) => {
     const leaderboard = await leaderboardCollection
       .find()
       .sort({ highscore: -1 })
-      .limit(10)
     res.json(leaderboard)
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch leaderboard' })
