@@ -8,7 +8,17 @@ const app = express()
 
 const PORT = process.env.PORT || 5000
 const MONGO_URI = process.env.MONGO_URI
-const blockedNumbers = ['574110338']
+const blockedNumbers = [
+  '596161717',
+  '551400977',
+  '511206591',
+  '574110338',
+  '577078623',
+  '557171006',
+  '555430620',
+  '592084080',
+  '551664414',
+]
 
 app.use(cors())
 app.use(bodyParser.json())
